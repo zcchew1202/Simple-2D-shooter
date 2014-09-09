@@ -3,6 +3,7 @@
 #include <allegro5\allegro_native_dialog.h>
 #include <allegro5\allegro_font.h>
 #include <allegro5\allegro_ttf.h>
+#include <allegro5\allegro_image.h>
 #include "objects.h"
 
 //GLOBAL variables
@@ -14,10 +15,13 @@ const int NUM_BULLETS = 5;
 const int HEIGHT = 400;
 const int NUM_COMETS = 10;
 
+
 //FUNCTION prototypes
 
-void InitShip(SpaceShip &ship);
+void InitShip(SpaceShip &ship, ALLEGRO_BITMAP *image);
 void DrawShip(SpaceShip &ship);
+
+void ResetShipAni(SpaceShip &ship, int position);
 
 void MoveShipUp(SpaceShip &ship);
 void MoveShipDown(SpaceShip &ship);
@@ -54,6 +58,7 @@ int main(void)
 	ALLEGRO_EVENT_QUEUE *event_queue = NULL;
 	ALLEGRO_TIMER *timer = NULL;
 	ALLEGRO_FONT *font18 = NULL;
+	ALLEGRO_BITMAP *shipImage;
 
 	if (!al_init())
 	{
@@ -76,13 +81,17 @@ int main(void)
 	al_install_keyboard();
 	al_init_font_addon();
 	al_init_ttf_addon();
+	al_init_image_addon();
 
 	event_queue = al_create_event_queue();
 	timer = al_create_timer(1.0/FPS);
 
+	shipImage = al_load_bitmap("Spaceships.png");
+	al_convert_mask_to_alpha(shipImage, al_map_rgb(255, 0, 255));
+
 	srand(time(NULL));
 
-	InitShip(ship);
+	InitShip(ship, shipImage);
 	InitBullets(Bullets, NUM_BULLETS);
 	InitComets(Comet, NUM_COMETS);
 
@@ -105,14 +114,20 @@ int main(void)
 			if (keys[UP] == true)
 				MoveShipUp(ship);
 
-			if (keys[DOWN] == true)
+			else if (keys[DOWN] == true)
 				MoveShipDown(ship);
+
+			else
+				ResetShipAni(ship, 1);
 
 			if (keys[LEFT] == true)
 				MoveShipLeft(ship);
 
-			if (keys[RIGHT] == true)
+			else if (keys[RIGHT] == true)
 				MoveShipRight(ship);
+
+			else
+				ResetShipAni(ship, 2);
 
 			if (!isGameOver)
 			{
@@ -213,6 +228,8 @@ int main(void)
 				DrawComets(Comet, NUM_COMETS);
 
 				al_draw_textf(font18, al_map_rgb(255, 0, 255), 5, 5, 0, "Player has destroyed %i enemies, Player has %i lives left", ship.score, ship.lives);
+
+				al_draw_filled_rectangle(ship.x - ship.boundx, ship.y - ship.boundy, ship.x + ship.boundx, ship.y + ship.boundy, al_map_rgba(255, 0, 255, 100));
 			}
 
 			else
@@ -228,7 +245,7 @@ int main(void)
 
 	}
 
-
+	al_destroy_bitmap(shipImage);
 	al_destroy_display(display);
 	al_destroy_event_queue(event_queue);
 	al_destroy_timer(timer);
@@ -236,30 +253,50 @@ int main(void)
 	return 0;
 }
 
-void InitShip(SpaceShip &ship)
+void InitShip(SpaceShip &ship, ALLEGRO_BITMAP *image)
 {
 	ship.x = 20;
 	ship.y = HEIGHT / 2;
 	ship.ID = PLAYER;
 	ship.lives = 3;
-	ship.speed = 7;
-	ship.boundx = 6;
-	ship.boundy = 7;
+	ship.speed = 6;
+	ship.boundx = 10;
+	ship.boundy = 12;
 	ship.score = 0;
+
+	ship.maxframe = 3;
+	ship.curframe = 0;
+	ship.frameCount = 0;
+	ship.frameDelay = 50;
+	ship.frameHeight = 41;
+	ship.frameWidth = 45;
+	ship.AniCol = 3;
+	ship.AniDir = 1;
+	ship.AniRow = 1;
+
+	ship.image = image;
+
+	
 
 }
 
 void DrawShip(SpaceShip &ship)
 {
-	al_draw_filled_rectangle(ship.x, ship.y - 9, ship.x + 10, ship.y - 7, al_map_rgb(255, 0, 0));
-	al_draw_filled_rectangle(ship.x, ship.y + 9, ship.x + 10, ship.y + 7, al_map_rgb(255, 0, 0));
+	int fx = (ship.curframe % ship.AniCol) * ship.frameWidth;
+	int fy = ship.AniRow * ship.frameHeight;
 
-	al_draw_filled_triangle(ship.x - 12, ship.y - 17, ship.x + 12, ship.y, ship.x - 12, ship.y + 17, al_map_rgb(0, 255, 0));
-	al_draw_filled_rectangle(ship.x-12,ship.y-2,ship.x+15,ship.y+2,al_map_rgb(0,0,255));
+	al_draw_bitmap_region(ship.image, fx, fy, ship.frameWidth, ship.frameHeight, ship.x - ship.frameWidth / 2, ship.y - ship.frameHeight / 2, 0);
+}
+
+void ResetShipAni(SpaceShip &ship, int position)
+{
+	if (position != 1)
+		ship.curframe = 0;
 }
 
 void MoveShipUp(SpaceShip &ship)
 {
+	ship.AniRow = 0;
 	ship.y -= ship.speed;
 	if (ship.y < 0)
 	{
@@ -269,6 +306,7 @@ void MoveShipUp(SpaceShip &ship)
 
 void MoveShipDown(SpaceShip &ship)
 {
+	ship.AniRow = 2;
 	ship.y += ship.speed;
 	if (ship.y > HEIGHT)
 	{
@@ -278,6 +316,7 @@ void MoveShipDown(SpaceShip &ship)
 
 void MoveShipLeft(SpaceShip &ship)
 {
+	ship.curframe = 2;
 	ship.x -= ship.speed;
 	if (ship.x < 0)
 	{
@@ -288,6 +327,7 @@ void MoveShipLeft(SpaceShip &ship)
 //changing how far ship goes to right is up to me, currently max...
 void MoveShipRight(SpaceShip &ship)
 {
+	ship.curframe = 1;
 	ship.x += ship.speed;
 	if (ship.x > WIDTH)
 	{
@@ -454,3 +494,5 @@ void CollideComets(comet Comet[], int csize, SpaceShip &ship)
 		}
 	}
 }
+
+

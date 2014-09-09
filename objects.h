@@ -15,6 +15,19 @@ struct SpaceShip
 	int boundy;
 	int score;
 
+	int maxframe;
+	int curframe;
+	int frameDelay;
+	int frameCount;
+	int frameWidth;
+	int frameHeight;
+	int AniDir;
+	int AniCol;
+	int AniRow;
+
+	ALLEGRO_BITMAP *image;
+
+
 };
 
 struct bullet
@@ -36,5 +49,22 @@ struct comet
 	int speed;
 	int boundx;
 	int boundy;
+
+	int maxframe;
+	int curframe;
+	int frameDelay;
+	int frameCount;
+	int frameWidth;
+	int frameHeight;
+	int AniDir;
+	int AniCol;
+	int AniRow;
+
+	ALLEGRO_BITMAP *image;
+
+};
+
+struct explosion
+{
 
 };
